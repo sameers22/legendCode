@@ -22,9 +22,10 @@ const Sauces = () => {
     }, []);
 
     const addToCart = (sauce) => {
-        const updatedCart = [...cart, sauce];
-        setCart(updatedCart);
-        localStorage.setItem("cart", JSON.stringify(updatedCart));
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        cart.push(sauce);
+        localStorage.setItem("cart", JSON.stringify(cart));
+        window.dispatchEvent(new Event("storage"));
     };
 
     return (
@@ -40,11 +41,6 @@ const Sauces = () => {
                     </div>
                 ))}
             </div>
-            {cart.length > 0 && (
-                <button className="view-cart-btn" onClick={() => navigate("/cart")}>
-                    View Cart ({cart.length})
-                </button>
-            )}
 
             <style jsx>{`
                 .sauces-container {

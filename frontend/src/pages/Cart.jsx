@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import menuBackground from "../assets/menu-background.png"; // ✅ Background same as sauces page
+import menuBackground from "../assets/menu-background.png"; 
 
 const Cart = () => {
     const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("cart")) || []);
     const navigate = useNavigate();
 
-    // ✅ Group items by count
+    useEffect(() => {
+        localStorage.setItem("cart", JSON.stringify(cart));
+        window.dispatchEvent(new Event("storage")); // ✅ Sync cart count in Navbar
+    }, [cart]);
+
     const groupedCart = cart.reduce((acc, item) => {
         const existingItem = acc.find(i => i.variantId === item.variantId);
         if (existingItem) {
@@ -18,35 +22,32 @@ const Cart = () => {
         return acc;
     }, []);
 
-    // ✅ Update localStorage after modification
-    const updateCartStorage = (updatedCart) => {
+
+    // ✅ Remove all instances of a selected item
+    const removeItemCompletely = (variantId) => {
+        const updatedCart = cart.filter(item => item.variantId !== variantId);
         setCart(updatedCart);
-        localStorage.setItem("cart", JSON.stringify(updatedCart));
     };
 
-    // ✅ Increase quantity of an item
+
     const increaseQuantity = (variantId) => {
-        const updatedCart = [...cart, cart.find(item => item.variantId === variantId)];
-        updateCartStorage(updatedCart);
+        setCart([...cart, cart.find(item => item.variantId === variantId)]);
     };
 
-    // ✅ Decrease quantity of an item (removes if quantity = 1)
     const decreaseQuantity = (variantId) => {
         let found = false;
         const updatedCart = cart.filter((item) => {
             if (!found && item.variantId === variantId) {
                 found = true;
-                return false; // ✅ Removes one instance
+                return false;
             }
             return true;
         });
-        updateCartStorage(updatedCart);
+        setCart(updatedCart);
     };
 
-    // ✅ Calculate Total Cost
     const totalCost = groupedCart.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0).toFixed(2);
 
-    // ✅ Shopify Checkout Redirect
     const checkoutWithShopify = () => {
         if (groupedCart.length === 0) return alert("Your cart is empty!");
 
@@ -62,27 +63,38 @@ const Cart = () => {
                 <p className="empty-cart">Your cart is empty.</p>
             ) : (
                 <>
-                    <ul className="cart-list">
-                        {groupedCart.map((item, index) => (
-                            <li key={index} className="cart-item">
-                                <img src={item.image} alt={item.title} className="cart-img" />
-                                <div className="cart-info">
-                                    <h2 className="cart-item-title">{item.title}</h2>
-                                    <p className="cart-quantity">
+                    <table className="cart-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {groupedCart.map((item, index) => (
+                                <tr key={index} className="cart-item">
+                                    <td className="cart-item-info">
+                                        <img src={item.image} alt={item.title} className="cart-img" />
+                                        <span className="cart-item-title">{item.title}</span>
+                                    </td>
+                                    <td>
                                         <button className="quantity-btn" onClick={() => decreaseQuantity(item.variantId)}>-</button>
                                         <span className="quantity-white">{item.quantity}</span>
                                         <button className="quantity-btn" onClick={() => increaseQuantity(item.variantId)}>+</button>
-                                    </p>
-                                    <p className="cart-price">${item.totalPrice} {item.currency}</p>
-                                </div>
-                                <button className="remove-btn" onClick={() => decreaseQuantity(item.variantId)}>Remove</button>
-                            </li>
-                        ))}
-                    </ul>
+                                    </td>
+                                    <td className="cart-price">${item.totalPrice} {item.currency}</td>
+                                    <td>
+                                        <button className="remove-btn" onClick={() => removeItemCompletely(item.variantId)}>Remove</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
                     <h3 className="total-cost">Total: ${totalCost}</h3>
 
-                    {/* ✅ Checkout Button */}
                     <button className="checkout-btn" onClick={checkoutWithShopify}>
                         Checkout Now
                     </button>
@@ -96,7 +108,7 @@ const Cart = () => {
                     padding: 120px 20px 50px;
                     text-align: center;
                     min-height: 100vh;
-                    background: url(${menuBackground}) no-repeat center center/cover; /* ✅ Same background */
+                    background: url(${menuBackground}) no-repeat center center/cover;
                     width: 100vw;  /* Ensure it spans the entire viewport width */
                     position: absolute;
                     left: 0;
@@ -114,50 +126,30 @@ const Cart = () => {
                     color: white;
                     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
                 }
-                .cart-list {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0 auto;
-                    max-width: 800px;
-                    background: rgba(0, 0, 0, 0.7); /* ✅ Translucent black */
+                .cart-table {
+                    width: 80%;
+                    margin: auto;
+                    border-collapse: collapse;
+                    background: rgba(0, 0, 0, 0.7);
                     border-radius: 10px;
-                    padding: 15px;
+                    color: white;
+                    font-size: 1.2rem;
                 }
-                .cart-item {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                th, td {
                     padding: 15px;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+                    text-align: center;
                 }
-                .cart-item:last-child {
-                    border-bottom: none;
+                .cart-item-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
                 }
                 .cart-img {
                     width: 60px;
                     height: 60px;
                     object-fit: cover;
                     border-radius: 5px;
-                    margin-right: 15px;
-                }
-                .cart-info {
-                    flex: 1;
-                    text-align: left;
-                }
-                .cart-item-title {
-                    font-size: 1.2rem;
-                    font-weight: bold;
-                    color: white;
-                    margin: 0;
-                }
-                .cart-quantity {
-                    font-size: 1.2rem;
-                    font-weight: bold;
-                    color: gold;
-                    margin: 5px 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
                 }
                 .quantity-btn {
                     background: gold;
@@ -179,7 +171,6 @@ const Cart = () => {
                 .cart-price {
                     font-size: 1rem;
                     color: gold;
-                    margin: 5px 0;
                 }
                 .total-cost {
                     font-size: 1.5rem;
@@ -231,6 +222,15 @@ const Cart = () => {
                 }
                 .back-btn:hover {
                     background: #d4ac0d;
+                }
+                @media (max-width: 900px) {
+                    .cart-table {
+                        width: 100%;
+                    }
+                    .cart-img {
+                        width: 40px;
+                        height: 40px;
+                    }
                 }
             `}</style>
         </div>

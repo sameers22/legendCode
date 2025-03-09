@@ -5,6 +5,7 @@ import logo from '../assets/leg_logo_converted.png';
 const Navbar = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [scrolling, setScrolling] = useState(false);
+    const [cartCount, setCartCount] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -19,6 +20,18 @@ const Navbar = () => {
         return () => {
             window.removeEventListener("scroll", handleScroll);
         };
+    }, []);
+
+    useEffect(() => {
+        // ✅ Update cart count when localStorage changes
+        const updateCartCount = () => {
+            const cart = JSON.parse(localStorage.getItem("cart")) || [];
+            setCartCount(cart.length);
+        };
+
+        updateCartCount();
+        window.addEventListener("storage", updateCartCount);
+        return () => window.removeEventListener("storage", updateCartCount);
     }, []);
 
     return (
@@ -43,6 +56,12 @@ const Navbar = () => {
                     <li><Link to="/book-event" className={`nav-link ${scrolling ? "small-link" : ""}`} onClick={() => setMenuOpen(false)}>Book Event</Link></li>
                     <li><Link to="/legendfamily" className={`nav-link ${scrolling ? "small-link" : ""}`} onClick={() => setMenuOpen(false)}>Legend Family</Link></li>
                     <li><Link to="/account" className={`nav-link ${scrolling ? "small-link" : ""}`} onClick={() => setMenuOpen(false)}>Account</Link></li>
+
+                    {/* ✅ View Cart Button (Only appears if cart is not empty) */}
+                    {cartCount > 0 && (
+                        <li><Link to="/cart" className="cart-link">View Cart ({cartCount})</Link></li>
+                    )}
+
                 </ul>
             </div>
 
@@ -111,6 +130,15 @@ const Navbar = () => {
                 .nav-link:hover {
                     color: #ffdd57; /* ✅ Only the text turns yellow */
                 }
+                
+                .cart-link {
+                    font-weight: bold;
+                    background: gold;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    color: black;
+                }
+
                 @media (max-width: 900px) {
                     .menu-button {
                         display: block;
