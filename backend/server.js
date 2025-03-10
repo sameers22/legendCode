@@ -49,8 +49,15 @@ const scrapeVideos = async () => {
         console.log("🔄 Updating video cache...");
         const hashtag = 'legendcookhouse';
         const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            executablePath: process.env.CHROME_BIN || puppeteer.executablePath(),
+            headless: "new",
+            args: [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer"
+            ]
         });
         const page = await browser.newPage();
 
